@@ -68,6 +68,9 @@ type Build struct {
 	Publish       *publish.Publish     `yaml:"publish,omitempty"`
 	Notifications *notify.Notification `yaml:"notify,omitempty"`
 
+  // hack to map /var/run/docker.sock into the build container at runtime
+  MapDockerSocket bool
+
 	// Git specified git-specific parameters, such as
 	// the clone depth and path
 	Git *git.Git `yaml:"git,omitempty"`
