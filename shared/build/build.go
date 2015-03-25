@@ -65,6 +65,9 @@ type Builder struct {
 	// mode. The default is false.
 	Privileged bool
 
+	// hack to map /var/run/docker.sock into the build container at runtime
+	MapDockerSocket bool
+
 	// Stdout specifies the builds's standard output.
 	//
 	// If stdout is nil, Run connects the corresponding file descriptor
@@ -386,6 +389,13 @@ func (b *Builder) run() error {
 
 		// debugging
 		log.Infof("mounting volume %s:%s", hostpath, volume)
+	}
+
+	// append in the docker socket if requested
+	if b.MapDockerSocket {
+		socket := "/var/run/docker.sock"
+		log.Infof("mapping docker.sock into %s", socket)
+		host.Binds = append(host.Binds, socket+":"+socket)
 	}
 
 	// create the container from the image

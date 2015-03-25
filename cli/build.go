@@ -34,6 +34,10 @@ func NewBuildCommand() cli.Command {
 				Usage: "runs drone build in a privileged container",
 			},
 			cli.BoolFlag{
+				Name:  "dind",
+				Usage: "runs drone build with /var/run/docker.sock mapped into the container",
+			},
+			cli.BoolFlag{
 				Name:  "deploy",
 				Usage: "runs drone build with deployments enabled",
 			},
@@ -66,6 +70,7 @@ func NewBuildCommand() cli.Command {
 // buildCommandFunc executes the "build" command.
 func buildCommandFunc(c *cli.Context) {
 	var privileged = c.Bool("p")
+	var mapdockersocket = c.Bool("dind")
 	var identity = c.String("i")
 	var deploy = c.Bool("deploy")
 	var publish = c.Bool("publish")
@@ -99,12 +104,12 @@ func buildCommandFunc(c *cli.Context) {
 	log.SetPriority(log.LOG_DEBUG) //LOG_NOTICE
 	docker.Logging = false
 
-	var exit, _ = run(path, identity, dockerhost, dockercert, dockerkey, publish, deploy, privileged)
+	var exit, _ = run(path, identity, dockerhost, dockercert, dockerkey, publish, deploy, privileged, mapdockersocket)
 	os.Exit(exit)
 }
 
 // TODO this has gotten a bit out of hand. refactor input params
-func run(path, identity, dockerhost, dockercert, dockerkey string, publish, deploy, privileged bool) (int, error) {
+func run(path, identity, dockerhost, dockercert, dockerkey string, publish, deploy, privileged bool, mapdockersocket bool) (int, error) {
 	dockerClient, err := docker.NewHostCertFile(dockerhost, dockercert, dockerkey)
 	if err != nil {
 		log.Err(err.Error())
@@ -181,6 +186,7 @@ func run(path, identity, dockerhost, dockercert, dockerkey string, publish, depl
 	builder.Stdout = os.Stdout
 	builder.Timeout = 300 * time.Minute
 	builder.Privileged = privileged
+	builder.MapDockerSocket = mapdockersocket
 
 	// execute the build
 	if err := builder.Run(); err != nil {
